@@ -1,0 +1,33 @@
+{
+  "name": "cls",
+  "version": "1.0.0",
+  "description": "Pizza delivery at your door step",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GabbyCruise/bnkle-pizza-delivery-system.git"
+  },
+  "author": "Gabriel U. Jonah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GabbyCruise/bnkle-pizza-delivery-system/issues"
+  },
+  "homepage": "https://github.com/GabbyCruise/bnkle-pizza-delivery-system#readme",
+  "dependencies": {
+    "@hapi/joi": "^17.1.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "debug": "^4.3.4",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "http-errors": "^2.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.2.4",
+    "sequelize": "^6.31.0",
+    "sequelize-cli": "^6.6.0"
+  }
+}
