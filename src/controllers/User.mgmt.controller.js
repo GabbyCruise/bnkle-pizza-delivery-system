@@ -1,13 +1,26 @@
 /* eslint-disable class-methods-use-this */
-const AuthService = require("../services/Auth.service");
+const UserMgr = require("../services/User.mgt.service");
 const Responses = require("../utils/responses");
 
-class AuthController {
+class UserManagementController {
 
-  /**** SIGNUP *****/
-  async userSignup(req, res) {
+  /**** LIST ALL ACCOUNTS *****/
+  async listAllUsers(req, res) {
 
-    const result = await AuthService.signup(req.body);
+    const result = await UserMgr.allUsers(req.body);
+    const { status, error, message, data } = result;
+    
+    if (status) {
+      res.status(201).json(Responses.successResponse(message, data));
+    } else {
+      res.status(error.status || 500).json(Responses.errorResponse(error));
+    }
+  }
+
+  /**** VIEW USER ACCOUNT *****/
+  async viewSingleUser(req, res) {
+
+    const result = await UserMgr.viewUser(req.body);
     const { status, error, message, data } = result;
     
     if (status) {
@@ -18,9 +31,9 @@ class AuthController {
   }
 
 
-  /***** USER LOGIN ******/
-  async userLogin(req, res) {
-    const result = await AuthService.login(req.body);
+  /***** UPDATE USER ACCOUTN BY USER ******/
+  async updateMyAccount(req, res) {
+    const result = await UserMgr.updateUserByUser(req.body);
     const { status, error, message, data } = result;
 
     if (status) {
@@ -30,9 +43,9 @@ class AuthController {
     }
   };
 
-  /**** FORGOT PASSWORD ****/
-  async passwordResetRequest(req, res) {
-    const result = await AuthService.passwordResetRequest(req.body);
+  /**** UPDATE USE ACCOUNT ADMIN ****/
+  async updateUserAccount(req, res) {
+    const result = await UserMgr.updateUserByAdmin(req.body);
     const { status, error, message, data } = result;
     
     if (status) {
@@ -42,10 +55,9 @@ class AuthController {
     }
   }
 
-
-  /***** PASSWORD CHANGE ******/
-  async changePassword(req, res) {
-    const result = await AuthService.resetPassword(req.body);
+  /**** DELETE USER ACCOUNT ADMIN ****/
+  async deleteUserAccount(req, res) {
+    const result = await UserMgr.deleteUserAccount(req.body);
     const { status, error, message, data } = result;
     
     if (status) {
@@ -56,4 +68,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = new UserManagementController();

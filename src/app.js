@@ -4,8 +4,11 @@ const createError = require("http-errors");
 const express = require("express");
 const cors = require("cors");
 const logger = require("morgan");
-const {admins, sequelize } = require('../models')
+const {users, menus, sequelize } = require('../models')
 const AuthHelpers = require('./helpers/authHelper')
+
+const authRoute = require("./routes/authRoutes");
+const userMgtRoute = require("./routes/userRoutes");
 
 
 const app = express();
@@ -15,22 +18,41 @@ app.use(cors());
 
 dotenv.config();
 
-// set up route here
-const authRoute = require("./routes/authRoutes");
-// const calculatorRoute = require("./routes/calculator");
-// const publicRoute = require('./routes/accessRoutes');
 
-// hash password
-const adminPass = '@superadminpassword'
 async function main(){
-  const hash = await AuthHelpers.hashPassword(adminPass);
+  
+  const hash = await AuthHelpers.hashPassword('@superadminpassword');
 
-  // await sequelize.sync({ force: true }).then(() => {
-  //   // Create default superadmin account
-    
-  //   admins.create({ firstname: "Super", lastname: "Admin User", type: 'superadmin', email: 'superadmin@gmail.com', password: hash, privileges: [] });
-  // });
-  // console.log('database synced!')
+  const menuData = [
+    { type : 'smallie', name : "Sweet Marghie", price : 7000 },
+    { type : 'smallie', name : "Chicky Pie", price : 1200 },
+    { type : 'smallie', name : "Beefie Suya", price : 1000},
+    { type : 'dessert', name : "Founders Favourites", price : 2000},
+    { type : 'dessert', name : "Melted Choco Pocket", price : 1300},
+    { type : 'dessert', name : "Lava Cakes", price : 1200},
+    { type : 'chicken', name : "Chicken Kickers", price : 1600},
+    { type : 'chicken', name : "Suya Wings", price : 1700},
+    { type : 'specialty', name : "Meatzza", price : 3500},
+    { type : 'specialty', name : "Shawarma Pizza", price : 3800}
+  ];
+
+  const adminData = {
+    email: 'gjonah18@gmail.com',
+    firstname: 'John', lastname : 'Doe',
+    street : "The Epicentre, 1 Zilly Aggrey Drive, Karmo Abuja",
+    password : hash, type : 'admin',
+  }
+
+  const duplicateAdmin = await users.findOne({ where : { email : adminData.email }});
+
+  if(duplicateAdmin){
+    await sequelize.authenticate()
+    return console.log('database connected');
+  }
+
+  await users.create(adminData);
+  await menus.bulkCreate(menuData);
+
 
   await sequelize.authenticate()
   console.log('database connected');
@@ -43,16 +65,15 @@ app.get("/", (req, res) => res.status(200).json({
   message: "Server running"
 }));
 
-// make use of morgan
+
 app.use(logger("dev"));
-// allow collection of payload from body
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// routers
+// API ROUTES
 app.use("/api/v1/auth", authRoute);
-// app.use("/api/v1/calculate", calculatorRoute);
-// app.use("/api/v1/resources", publicRoute)
+app.use("/api/v1/accounts", userMgtRoute);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
@@ -66,7 +87,7 @@ app.use((err, req, res, next) => {
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
-  // render the error page
+  // render error page
   res.status(err.status || 400);
   res.json({ error: err.message, message: "Operation failed" });
 });

@@ -1,28 +1,57 @@
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  async up(queryInterface, DataTypes) {
     await queryInterface.createTable('cart', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: DataTypes.INTEGER
       },
-      name: {
-        type: Sequelize.STRING
+
+      uuid: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: false,
       },
+
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull : false,
+      },
+
+      title: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+  
+      quantity: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
+      },
+  
+      sub_total: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+  
+      total_amount: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: DataTypes.DATE
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: DataTypes.DATE
       }
     });
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface, DataTypes) {
     await queryInterface.dropTable('cart');
   }
 };

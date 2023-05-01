@@ -2,49 +2,37 @@ const db = require('../../models/index');
 const sendEmail = require('../helpers/sendMail');
 const User = db.users;
 
-const { Forbidden, InternalServerError, Unauthorized } = require("http-errors");
+const { Forbidden, InternalServerError, Unauthorized, NotFound } = require("http-errors");
 const AuthHelpers = require("../helpers/authHelper");
 
 class AuthServices {
 
-  /***** TUTOR/STUDENT SIGNUP *****/
+  /***** SIGNUP SERVICE *****/
   async signup(payload) {
     try {
-      const { firstname, lastname, email, phone, type, password, verification_link } = payload; 
+      const { firstname, lastname, email, street, password } = payload; 
       const checkUser = await User.findOne({ where : { email: email}});
       
       if (checkUser) {
         throw Forbidden("user with this email address already exists");
       }
 
-      // hash password
       const hash = await AuthHelpers.hashPassword(password);
-
-      //generate verification/activation token
-      const verification_token = await AuthHelpers.generateToken({ userId: email });
-
       
       const user = await User.create({
-        firstname, lastname, phone, email, password: hash, type, verification_token, verification_link
+        firstname, lastname, email, street, password: hash,
       });
       if (!user) {
         throw InternalServerError("Unable to save user's data");
-      }      
-
-      // SEND ACCOUNT VERIFICATION EMAIL
-      await sendEmail.sendAccountVerificationEmail(payload).catch((error) => {
-        throw InternalServerError('Account verification email could not be sent, contact support')
-      });
-
+      }
 
       return {
         status: true,
         data: {
-          firstname: user.firstname,
-          email: user.email,
-          verification_token
+          firstname: user.firstname, lastname : user.lastname,
+          email: user.email, street : user.street
         },
-        message: "User created successfull",
+        message: "User signed up successfuly",
         error: null
       };
     } catch (error) {
@@ -57,63 +45,6 @@ class AuthServices {
       };
     }
   }
-
-  /***** ACCOUNT VERIFICATION/ACTIVATION ****/
-  async verification(payload) {
-    try {
-      const { email, token } = payload;
-
-      const user = await User.findOne({ where : { email: email}});
-      if (!user) {
-        throw Unauthorized("User does not exist");
-      };
-
-      if(user.verified === true){
-        return {
-          status: true,
-          data: null,
-          message: "Your account has already been verified, kindly login.",
-          error: null
-        };
-      };       
-
-      if(!user.verification_token){
-        throw Unauthorized("Token Not Found");
-      };
-
-      if(token != user.verification_token){
-        throw Unauthorized('Invalid verification token provided');
-      };
-
-      const userOBJ = {verification_token: null, verified: true, status: 'active'}
-      const activatedUser = await User.update(userOBJ, { where: { uuid: user.uuid }});
-      if (activatedUser == 0) {
-        throw InternalServerError("Sorry, Account could not be verified, try again.");
-      };
-
-
-      //SEND WELCOME EMAIL
-      await sendEmail.sendWelcomeEmail(user).catch((error) => {
-        throw InternalServerError('Sorry, we could not send welcome email, contact support ')
-      });
-
-      return {
-        status: true,
-        data: {email:  user.email, firstname: user.firstname, lastname: user.lastname, },
-        message: "Account verification successful",
-        error: null
-      };
-
-    } catch (error) {
-      return {
-        status: false,
-        data: null,
-        message: error.message,
-        error
-      };
-    }
-  }
-
 
 
   /***** USER LOGIN *****/
@@ -121,31 +52,27 @@ class AuthServices {
     try {
       const { email, password } = payload;
 
-      const user = await User.findOne({ where : { email: email}});
-      if (!user) {
+      const is_user = await User.findOne({ where : { email: email}});
+      if (!is_user) {
         throw Unauthorized('No record found for this email address');
       }
 
-      // check if password is correct
-      const checkPassword = await AuthHelpers.isPasswordValid(user.password, password);
+      const is_password_correct = await AuthHelpers.isPasswordValid(is_user.password, password);
 
-      if (!checkPassword) {
+      if (!is_password_correct) {
         throw Unauthorized("Invalid password, kindly enter your correct password.");
       }
 
-      if(user.verified === false){
-        throw Unauthorized("Please verify your email address to activate your account");
-      }
+      const token = await AuthHelpers.generateToken({ userId: is_user.uuid });
 
-      // create token
-      const token = await AuthHelpers.generateToken({ userId: user.uuid });
-
-      // removed the password from the returned data
-      user.password = null;      
-
+      is_user.password = null;
       return {
         status: true,
-        data: {firstname:  user.firstname, lastname: user.lastname, email: user.email, token: token },
+        data: {
+          user_id : is_user.uuid, firstname:  is_user.firstname, 
+          lastname: is_user.lastname, 
+          email: is_user.email, type : is_user.type, token: token 
+        },
         message: "Authentication successful",
         error: null
       };
@@ -252,6 +179,7 @@ class AuthServices {
       };
     }
   }
+
 }
 
 module.exports = new AuthServices();

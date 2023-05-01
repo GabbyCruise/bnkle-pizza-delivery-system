@@ -1,28 +1,53 @@
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  async up(queryInterface, DataTypes) {
     await queryInterface.createTable('menus', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: DataTypes.INTEGER
       },
+
+      uuid: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: false,
+      },
+  
       name: {
-        type: Sequelize.STRING
+        type: DataTypes.STRING,
+        allowNull: true,
       },
+  
+      type: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+  
+      price: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
+      },
+  
+      status: {
+        type: DataTypes.ENUM('available', 'not_available'),
+        allowNull: false,
+        defaultValue : 'available',
+      },
+
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: DataTypes.DATE
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: DataTypes.DATE
       }
     });
   },
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface, DataTypes) {
     await queryInterface.dropTable('menus');
   }
 };
