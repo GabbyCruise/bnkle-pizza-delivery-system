@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, DataTypes) {
-    await queryInterface.createTable('cart', {
+    await queryInterface.createTable('cart_items', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -16,44 +16,35 @@ module.exports = {
         allowNull: false,
       },
 
-      userId: {
+      cartId: {
         type: DataTypes.INTEGER,
-        allowNull : false,
+        allowNull: false,
       },
-
-      title: {
+  
+      menu_id: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
       },
   
-      total_item: {
+  
+      description: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+  
+      quantity: {
         type: DataTypes.BIGINT,
-        allowNull: true,
-        defaultValue : 0,
+        allowNull: false,
       },
   
-      discount: {
-        type: DataTypes.BIGINT,
-        allowNull: true,
-        defaultValue : 0,
-      },
-  
-      sub_total: {
+      unit_price: {
         type: DataTypes.FLOAT,
-        allowNull: true,
-        defaultValue : 0
+        allowNull: false,
       },
   
       total_amount: {
         type: DataTypes.FLOAT,
-        allowNull: true,
-        defaultValue : 0,
-      },
-
-      status: {
-        type : DataTypes.ENUM('checked_out', 'pending'),
-        allowNull : false,
-        defaultValue : 'pending',
+        allowNull: false,
       },
 
       createdAt: {
@@ -68,6 +59,6 @@ module.exports = {
     });
   },
   async down(queryInterface, DataTypes) {
-    await queryInterface.dropTable('cart');
+    await queryInterface.dropTable('cart_items');
   }
 };

@@ -9,14 +9,15 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({users, order}) {
+    static associate({users, order, cart_items}) {
       // define association here
       this.belongsTo(users, { foreignKey : 'userId'});
       this.hasOne(order, { foreignKey : 'cartId'});
+      this.hasMany(cart_items, { foreignKey : 'cartId'});
     }
 
     toJSON(){
-      return { ...this.get(), id: undefined}
+      return { ...this.get(), id: undefined, userId : undefined, cartId : undefined}
     }
   }
   cart.init({
@@ -31,20 +32,35 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
 
-    quantity: {
+    total_item: {
       type: DataTypes.BIGINT,
       allowNull: true,
+      defaultValue : 0,
+    },
+
+    discount: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue : 0,
     },
 
     sub_total: {
       type: DataTypes.FLOAT,
       allowNull: true,
+      defaultValue : 0
     },
 
     total_amount: {
       type: DataTypes.FLOAT,
       allowNull: true,
+      defaultValue : 0,
     },
+
+    status: {
+      type : DataTypes.ENUM('checked_out', 'pending'),
+      allowNull : false,
+      defaultValue : 'pending',
+    }
 
   }, {
     sequelize,

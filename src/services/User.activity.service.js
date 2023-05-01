@@ -2,6 +2,7 @@ const db = require('../../models/index');
 const User = db.users;
 const Menus = db.menus;
 const Cart = db.cart;
+const CartItems = db.cart_items;
 const Order = db.order
 
 const { Forbidden, InternalServerError } = require("http-errors");
@@ -22,7 +23,7 @@ class UserActivityService {
       return {
         status: true,
         data: menuData,
-        message: "menuData retrieved successfuly",
+        message: "Menu data retrieved successfuly",
         error: null
       };
     } catch (error) {
@@ -37,11 +38,13 @@ class UserActivityService {
   }
 
 
-  /***** ADD MENU TO CART *****/
+  /** ADD MENU TO CART
+   * This is a single process execution. 
+   * It can be upgraded to adding multiple menus at a time
+   */
   async addMenuToCart(payload) {
     try {
       
-
       const is_user = await User.findOne({ where : { uuid : payload.user_id}});
       if (!is_user) {
         throw Forbidden("There is no data found for this user_id");
@@ -49,22 +52,90 @@ class UserActivityService {
 
       const is_menu = await Menus.findOne({ where : { uuid : payload.menu_id}});
       if (!is_menu) {
-        throw Forbidden("There is no data found for this user_id");
+        throw Forbidden("There is no data found for this menu_id");
       }
 
-      const cartObj = {
-        title : is_user.firstname + " " + is_user.lastname + " items ",
+      const is_user_cart_active = await Cart.findOne({ where : { userId : is_user.id, status : 'pending'}});
+      if(is_user_cart_active){
+
+        //add items to cart_item and update cart with current price
+        const cart_item_obj = {
+          menu_id : is_menu.uuid,
+          description : is_menu.type + " - " + is_menu.name,
+          quantity : payload.quantity,
+          unit_price : is_menu.price,
+          total_amount : is_menu.price * payload.quantity,
+          cartId : is_user_cart_active.id,
+        };
+
+        const cartObj = {
+          total_item : parseInt(is_user_cart_active.total_item) + parseInt(cart_item_obj.quantity),
+          total_amount : is_user_cart_active.total_amount + cart_item_obj.total_amount,
+        }
+
+        const addItems = await CartItems.create(cart_item_obj);
+        await Cart.update(cartObj, { where : { uuid : is_user_cart_active.uuid }});
+
+        const data = await Cart.findOne({ 
+          include : [
+            {
+              model : CartItems,
+              attributes : [[ 'uuid', 'cart_item_id'], 'menu_id', 'description', 'quantity', 'unit_price', 'total_amount']
+            }
+          ],
+  
+          attributes : [[ 'uuid', 'cart_id'], 'title', 'total_item', 'discount', 'sub_total', 'total_amount', 'status'],
+  
+          where : { uuid : is_user_cart_active.uuid }
+        })
+
+        return {
+          status: true,
+          data: data,
+          message: "Menu item added to cart successfuly",
+          error: null
+        };
+      }
+
+      // CREATE NEW CART
+      const cart_obj = {
+        title : is_user.firstname + " " + is_user.lastname + " cart details",
+        total_item : payload.quantity,
+        total_amount : is_menu.price * payload.quantity,
+        userId : is_user.id,
+      }
+
+      const saveData = await Cart.create(cart_obj);
+      if(!saveData){
+        throw InternalServerError("There was a problem processing this request. Kindly try again.");
+      }
+
+      const cartItem = {
+        menu_id : is_menu.uuid,
+        description : is_menu.type + " - " + is_menu.name,
         quantity : payload.quantity,
-        sub_total : is_menu.price,
-        total : is_menu.price * payload.quantity,
+        unit_price : is_menu.price,
+        total_amount : is_menu.price * payload.quantity,
+        cartId : saveData.id,
       }
 
-      //continue from here
+      await CartItems.create(cartItem);
+      const data = await Cart.findOne({ 
+        include : [
+          {
+            model : CartItems,
+            attributes : [[ 'uuid', 'cart_item_id'], 'menu_id', 'description', 'quantity', 'unit_price', 'total_amount']
+          }
+        ],
 
+        attributes : [[ 'uuid', 'cart_id'], 'title', 'total_item', 'discount', 'sub_total', 'total_amount', 'status'],
+
+        where : { uuid : saveData.uuid }
+      })
       return {
         status: true,
         data: data,
-        message: "User details retrieved successfuly",
+        message: "Menu item added to cart successfuly",
         error: null
       };
     } catch (error) {
@@ -78,36 +149,135 @@ class UserActivityService {
     }
   }
 
+
   /***** SEE MY CART *****/
-  async seeMyCart(payload) {
+  async myCartDetails(payload) {
     try {
-      await ConfirmAdmin.isAdminAuthorized(payload.admin_id);
-      const checkUser = await User.findOne({ where : { uuid: payload.user_id}});
       
-      if (!checkUser) {
+      const is_user = await User.findOne({ where : { uuid: payload.user_id}});
+      if (!is_user) {
         throw Forbidden("There is no data found for this user_id");
       }
 
-      const userObj = {
-        firstname : payload.firstname,
-        lastname : payload.lastname,
-        street : payload.street,
-        email : payload.email,
-      }
-      const updateData = await User.update(userObj, { where : { uuid : payload.user_id}});
-      if (updateData == 0) {
-        throw InternalServerError("Sorry, there was a problem performing this operation. Kindly try again.");
-      }
+      const data = await Cart.findOne({
+        include : [
+          {
+            model : CartItems,
+            attributes : [[ 'uuid', 'cart_item_id'], 'menu_id', 'description', 'quantity', 'unit_price', 'total_amount']
+          },
 
-      const data = await User.findOne({
-        attributes : [['uuid', 'user_id'], 'firstname', 'lastname', 'email', 'street', 'type', 'status'],
-        where : { uuid : payload.user_id}
+          {
+            model : User,
+            attributes : [['uuid', 'user_id'], 'firstname', 'lastname', 'email', 'street', 'type', 'status'],
+          },
+        ],
+
+        attributes : [['uuid', 'cart_id'], 'title', 'total_item', 'sub_total', 'total_amount', 'status'],
+        where : { userId : is_user.id, status : 'pending'},
       })
 
       return {
         status: true,
         data: data,
-        message: "User details updated successfuly",
+        message: "User cart retrieved successfuly",
+        error: null
+      };
+    } catch (error) {
+
+      return {
+        status: false,
+        data: null,
+        message: error.message,
+        error
+      };
+    }
+  }
+
+
+  async placeOrder(payload) {
+    try {
+      
+      const is_user = await User.findOne({ where : { uuid : payload.user_id}});
+      if (!is_user) {
+        throw Forbidden("There is no data found for this user_id");
+      }
+
+      const active_cart = await Cart.findOne({ where : { userId : is_user.id, status : 'pending'}});
+      if (!active_cart) {
+        throw Forbidden("There is no active cart found for this user");
+      }
+
+      var want_delivery = false;
+      var address = null;
+      var delivery_charges = 0;
+      if(payload.add_delivery == true){
+        if(!payload.delivery_address){
+          throw Forbidden('Please enter your delivery address.');
+        }
+
+        want_delivery = true;
+        address = payload.delivery_address;
+        delivery_charges = 1000
+      }
+
+      const order_obj = {
+        userId : is_user.id,
+        cartId : active_cart.id,
+        sub_total : active_cart.total_amount,
+        add_delivery : want_delivery,
+        delivery_amount : delivery_charges,
+        delivery_location : address,
+        total_amount : active_cart.total_amount + parseInt(delivery_charges),
+      }
+
+      const place_order = await Order.create(order_obj);
+      await Cart.update({status : 'checked_out'}, { where : { uuid : active_cart.uuid}});
+
+      const data = await Order.findOne({ 
+        include : [
+          {
+            model : User,
+            attributes : [['uuid', 'user_id'], 'firstname', 'lastname', 'email', 'street', 'type', 'status'],
+          },
+
+          {
+            model : Cart,
+            attributes : [['uuid', 'cart_id'], 'title', 'total_item', 'sub_total', 'total_amount', 'status'],
+          }
+        ],
+        attributes : [['uuid', 'order_id'], 'sub_total', 'total_amount', 'status', 'add_delivery', 'delivery_amount', 'delivery_location', ],
+        where : { uuid : place_order.uuid}
+      })
+
+      return {
+        status: true,
+        data: data,
+        message: "Your order was placed successfuly.",
+        error: null
+      };
+
+
+      const cartObj = {
+        title : is_user.firstname + " " + is_user.lastname + " cart details",
+        quantity : payload.quantity,
+        unit_price : is_menu.price,
+        total_amount : is_menu.price * payload.quantity,
+        userId : is_user.id,
+      }
+
+      const saveData = await Cart.create(cartObj);
+      if(!saveData){
+        throw InternalServerError("There was a problem processing this request. Kindly try again.");
+      }
+
+      return {
+        status: true,
+        data: {
+          title : saveData.title, unit_price : saveData.unit_price,
+          quantity : saveData.quantity, total_amount : saveData.total_amount,
+          status : saveData.status,
+        },
+        message: "User details retrieved successfuly",
         error: null
       };
     } catch (error) {
@@ -123,29 +293,43 @@ class UserActivityService {
 
 
   /***** SEE MY ORDER *****/
-  async seeMyOrder(payload) {
+  async unPaidDetailsOrder(payload) {
     try {
-
-      userObj = {
-        firstname : payload.firstname,
-        lastname : payload.lastname,
-        street : payload.street,
-        // email : payload.email,
-      }
-      const updateData = await User.update(userObj, { where : { uuid : payload.user_id}});
-      if (updateData == 0) {
-        throw InternalServerError("Sorry, there was a problem performing this operation. Kindly try again.");
+      
+      const is_user = await User.findOne({ where : { uuid: payload.user_id}});
+      if (!is_user) {
+        throw Forbidden("There is no data found for this user_id");
       }
 
-      const data = await User.findOne({
-        attributes : [['uuid', 'user_id'], 'firstname', 'lastname', 'email', 'street', 'type', 'status'],
-        where : { uuid : payload.user_id}
+      const orderDetails = await Order.findOne({
+        include : [
+          {
+            model : Cart,
+            attributes : [['uuid', 'cart_id'], 'title', 'total_item', 'sub_total', 'total_amount', 'status'],
+
+            include : [
+              {
+                model : CartItems,
+                attributes : [[ 'uuid', 'cart_item_id'], 'menu_id', 'description', 'quantity', 'unit_price', 'total_amount']
+              }
+            ]
+          },
+
+          {
+            model : User,
+            attributes : [['uuid', 'user_id'], 'firstname', 'lastname', 'email', 'street', 'type', 'status'],
+          },
+        ],
+
+        attributes : [['uuid', 'order_id'], 'sub_total', 'total_amount', 'status', 'add_delivery', 'delivery_amount', 'delivery_location', ],
+
+        where : { userId : is_user.id, status : 'unpaid' }
       })
 
       return {
         status: true,
-        data: data,
-        message: "Your details was updated successfuly",
+        data: orderDetails,
+        message: "User Order retrieved successfuly",
         error: null
       };
     } catch (error) {

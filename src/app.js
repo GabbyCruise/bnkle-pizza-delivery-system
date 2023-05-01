@@ -74,6 +74,7 @@ app.use(express.urlencoded({ extended: false }));
 // API ROUTES
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/accounts", userMgtRoute);
+app.use("/api/v1/menu", userMgtRoute);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

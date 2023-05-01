@@ -26,11 +26,6 @@ module.exports = {
         allowNull : false,
       },
   
-      delivery_amount: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-      },
-  
       sub_total: {
         type: DataTypes.FLOAT,
         allowNull: false,
@@ -45,6 +40,21 @@ module.exports = {
         type : DataTypes.ENUM('paid', 'unpaid'),
         allowNull : false,
         defaultValue : 'unpaid',
+      },
+  
+      add_delivery: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
+  
+      delivery_amount: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+  
+      delivery_location: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
   
       delivered : {
