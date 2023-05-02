@@ -32,7 +32,7 @@ class AuthController {
 
   /**** FORGOT PASSWORD ****/
   async passwordResetRequest(req, res) {
-    const result = await AuthService.passwordResetRequest(req.body);
+    const result = await AuthService.forgotPassword(req.body);
     const { status, error, message, data } = result;
     
     if (status) {

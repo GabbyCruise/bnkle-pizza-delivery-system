@@ -7,6 +7,7 @@ const {
 const { validator } = require("../middleware/validationMid");
 const UserMgr = require('../controllers/User.mgmt.controller');
 const MenuAcc = require('../controllers/User.activity.controller');
+const PayMgr = require('../controllers/User.payment.controller');
 const { mustBeLoggedIn } = require('../helpers/authHelper');
 
 
@@ -31,8 +32,11 @@ router.post('/cart/add', mustBeLoggedIn, validator(addToCartValidation), MenuAcc
 
 router.get('/my-cart', mustBeLoggedIn, validator(userAccessValidation), MenuAcc.getUserCart);
 
-router.post('/place-order', mustBeLoggedIn, validator(placeOrderValidation), MenuAcc.placeUserOrder)
+router.post('/place-order', mustBeLoggedIn, validator(placeOrderValidation), MenuAcc.placeUserOrder);
 
-router.get('/my-order', mustBeLoggedIn, validator(userAccessValidation), MenuAcc.getUserOrder)
+router.get('/my-order', mustBeLoggedIn, validator(userAccessValidation), MenuAcc.getUserOrder);
 
+
+/*** PAYMENTS ***/
+router.post('/payments/pay', mustBeLoggedIn, validator(userAccessValidation), PayMgr.makeOrderPayments);
 module.exports = router;

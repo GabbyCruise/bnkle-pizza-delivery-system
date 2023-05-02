@@ -57,7 +57,7 @@ class UserActivityController {
 
   /**** USER ORDER ****/
   async getUserOrder(req, res) {
-    const result = await ActivityMgr.unPaidDetailsOrder(req.body);
+    const result = await ActivityMgr.unpaidOrderDetails(req.body);
     const { status, error, message, data } = result;
     
     if (status) {

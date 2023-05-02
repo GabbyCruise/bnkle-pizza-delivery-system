@@ -1,6 +1,7 @@
 const app = require("./src/app");
 const debug = require("debug")("authenticationsystem:server");
 const http = require("http");
+require("dotenv").config()
 
 const port = normalizePort(process.env.PORT || "3000");
 app.set("port", port);

@@ -2,7 +2,7 @@ const db = require('../../models/index');
 const sendEmail = require('../helpers/sendMail');
 const User = db.users;
 
-const { Forbidden, InternalServerError, Unauthorized, NotFound } = require("http-errors");
+const { Forbidden, InternalServerError, Unauthorized } = require("http-errors");
 const AuthHelpers = require("../helpers/authHelper");
 
 class AuthServices {
@@ -88,35 +88,16 @@ class AuthServices {
 
 
   /***** PASSWORD RESET REQUEST *****/
-  async passwordResetRequest(payload) {
+  async forgotPassword(payload) {
     try {
       const { email, reset_link } = payload;
 
-      const user = await User.findOne({ where: { email: email}});
-      if (!user) {
-        throw Unauthorized("User does not exist");
-      };
-
-      // generate password reset token
-      const token = await AuthHelpers.generateToken({ userId: user.uuid });
-
-      const userOBJ = {reset_token: token, reset_link: reset_link}
-      const saved = await User.update(userOBJ, { where: { uuid: user.uuid }});
-      if (saved == 0) {
-        throw InternalServerError("Sorry, reset request could not be handled, try again.");
-      };
-
-      const account_owner = await User.findOne({ where : { email : email }})
-
-      //SEND PASSWORD RESET INSTRUCTION
-      await sendEmail.sendPasswordResetEmail(account_owner).catch((error) => {
-        throw InternalServerError('Password reset instructions could not be sent, contact support')
-      });
+      //IMPLEMENT PROCESS
 
       return {
         status: true,
-        data: {email:  account_owner.email, firstname: account_owner.firstname, lastname: account_owner.lastname, token: account_owner.reset_token },
-        message: "Password reset instructions sent successfully to " + user.email,
+        data: null,
+        message: "Password reset instructions sent successfully",
         error: null
       };
 
@@ -136,32 +117,7 @@ class AuthServices {
     try {
       const { email, token, password } = payload;
 
-      const user = await User.findOne({ where: { email: email} });
-      if (!user) {
-        throw Unauthorized("User does not exist");
-      };
-
-      if(!user.reset_token){
-        throw Unauthorized("Password Reset token Not Found");
-      };
-
-      if(user.reset_token != token){
-        throw Unauthorized('Invalid reset token provided. Try again with the correct link sent to your email.')
-      }
-
-      // hash password
-      const hash = await AuthHelpers.hashPassword(password);
-
-      const userOBJ = {reset_token: null, password: hash, reset_count: user.reset_count+1}
-      const saved = await User.update(userOBJ, { where: { uuid: user.uuid }});
-      if (saved == 0) {
-        throw InternalServerError("Sorry, We could not reset your password, try again.");
-      };
-
-      //SEND PASSWORD CHANGE NOTIF
-      await sendEmail.sendPasswordChangeEmail(user).catch((error) => {
-        throw InternalServerError('Sorry, We could not send PASSWORD CHANGE EMAIL, try again or contact support.')
-      });
+      // IMPLEMENT PROCESS 
 
       return {
         status: true,

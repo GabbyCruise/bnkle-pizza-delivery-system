@@ -6,7 +6,8 @@ const CartItems = db.cart_items;
 const Order = db.order
 
 const { Forbidden, InternalServerError } = require("http-errors");
-const ConfirmAdmin = require("./Authorization");
+const stripe = require("stripe")(process.env.STRIPE_PRIVATE_KEY);
+const sendInvoiceEmail = require('../helpers/sendMail');
 
 class UserActivityService {
 
@@ -58,7 +59,7 @@ class UserActivityService {
       const is_user_cart_active = await Cart.findOne({ where : { userId : is_user.id, status : 'pending'}});
       if(is_user_cart_active){
 
-        //add items to cart_item and update cart with current price
+        
         const cart_item_obj = {
           menu_id : is_menu.uuid,
           description : is_menu.type + " - " + is_menu.name,
@@ -233,6 +234,12 @@ class UserActivityService {
       const place_order = await Order.create(order_obj);
       await Cart.update({status : 'checked_out'}, { where : { uuid : active_cart.uuid}});
 
+      //OBTAIN PAYMENT REFERENCE
+			const paymentIntent = await stripe.paymentIntents.create({
+				amount: place_order.total_amount,
+				currency: "usd"
+			});
+
       const data = await Order.findOne({ 
         include : [
           {
@@ -247,37 +254,17 @@ class UserActivityService {
         ],
         attributes : [['uuid', 'order_id'], 'sub_total', 'total_amount', 'status', 'add_delivery', 'delivery_amount', 'delivery_location', ],
         where : { uuid : place_order.uuid}
+      });
+
+      //TODO - complete the below.
+      await sendInvoiceEmail.sendOrderReceipt(data).catch(( error ) => {
+        throw InternalServerError("Sorry, we could not email you your invoice details.")
       })
 
       return {
         status: true,
-        data: data,
+        data: data, //paymantIntent
         message: "Your order was placed successfuly.",
-        error: null
-      };
-
-
-      const cartObj = {
-        title : is_user.firstname + " " + is_user.lastname + " cart details",
-        quantity : payload.quantity,
-        unit_price : is_menu.price,
-        total_amount : is_menu.price * payload.quantity,
-        userId : is_user.id,
-      }
-
-      const saveData = await Cart.create(cartObj);
-      if(!saveData){
-        throw InternalServerError("There was a problem processing this request. Kindly try again.");
-      }
-
-      return {
-        status: true,
-        data: {
-          title : saveData.title, unit_price : saveData.unit_price,
-          quantity : saveData.quantity, total_amount : saveData.total_amount,
-          status : saveData.status,
-        },
-        message: "User details retrieved successfuly",
         error: null
       };
     } catch (error) {
@@ -293,7 +280,7 @@ class UserActivityService {
 
 
   /***** SEE MY ORDER *****/
-  async unPaidDetailsOrder(payload) {
+  async unpaidOrderDetails(payload) {
     try {
       
       const is_user = await User.findOne({ where : { uuid: payload.user_id}});
