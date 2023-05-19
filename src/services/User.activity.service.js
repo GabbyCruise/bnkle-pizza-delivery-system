@@ -256,7 +256,7 @@ class UserActivityService {
         where : { uuid : place_order.uuid}
       });
 
-      //TODO - complete the below.
+      
       await sendInvoiceEmail.sendOrderReceipt(data).catch(( error ) => {
         throw InternalServerError("Sorry, we could not email you your invoice details.")
       })
