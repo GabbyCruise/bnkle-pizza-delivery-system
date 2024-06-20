@@ -21,7 +21,7 @@ dotenv.config();
 
 async function main(){
   
-  const hash = await AuthHelpers.hashPassword('@superadminpassword');
+  const hash = await AuthHelpers.hashPassword(process.env.SUPERADMINPASS);
 
   const menuData = [
     { type : 'smallie', name : "Sweet Marghie", price : 7000 },
@@ -37,9 +37,9 @@ async function main(){
   ];
 
   const adminData = {
-    email: 'gjonah18@gmail.com',
+    email: process.env.ADMINEMAIL,
     firstname: 'John', lastname : 'Doe',
-    street : "The Epicentre, 1 Zilly Aggrey Drive, Karmo Abuja",
+    street : "No 33 district",
     password : hash, type : 'admin',
   }
 
@@ -76,15 +76,12 @@ app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/accounts", userMgtRoute);
 app.use("/api/v1/menu", userMgtRoute);
 
-// catch 404 and forward to error handler
 app.use((req, res, next) => {
   next(createError(404));
 });
 
 // error handler
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
 

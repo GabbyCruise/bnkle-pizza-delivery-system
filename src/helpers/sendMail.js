@@ -22,7 +22,7 @@ class sendEmail {
 
   const mailOptions = {
     subject : 'Your order information',
-    from    : 'Bnkle Pizza <gabriel@woca.ng>',
+    from    : `Bnkle Pizza <${process.env.EMAIL}>`,
     to      : payload.email,
     html    : email,
   }

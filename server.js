@@ -3,7 +3,7 @@ const debug = require("debug")("authenticationsystem:server");
 const http = require("http");
 require("dotenv").config()
 
-const port = normalizePort(process.env.PORT || "3000");
+const port = normalizePort(process.env.PORT || process.env.DEFINEDPORT);
 app.set("port", port);
 
 const server = http.createServer(app);
